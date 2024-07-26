@@ -6,14 +6,15 @@ import { useEffect, useState } from 'react';
 import { Spinner } from '_components';
 import { useUserService } from '_services';
 
-import { App, Dropdown, Popconfirm, Table, Menu, Tag, Typography, Button, Flex, Divider, Modal, Form, Upload, Col, Row , Input} from 'antd';
+import { Dropdown, Popconfirm, Table, Select, Tag, Typography, Button, Flex, Divider, Modal, Form, Upload, Col, Row } from 'antd';
 import {
-    EditOutlined,
     DeleteFilled,
     FileAddOutlined,
     UploadOutlined
 } from '@ant-design/icons';
+import { toast } from 'react-toastify';
 
+import '../quyhoach/quyhoach.css';
 export default Quyhoach;
 
 function Quyhoach() {
@@ -33,6 +34,29 @@ function Quyhoach() {
         }));
     }
 
+    const dataMock = [
+        {
+            value: '1',
+            label: 'Xuân Trường',
+        },
+        {
+            value: '2',
+            label: 'Hải Hậu',
+        },
+        {
+            value: '3',
+            label: 'Giao Thuỷ',
+        },
+        {
+            value: '4',
+            label: 'Vụ Bản',
+        },
+        {
+            value: '5',
+            label: 'Trực Ninh',
+        }
+    ]
+
     const columns = [
         {
             title: 'STT',
@@ -40,17 +64,35 @@ function Quyhoach() {
             key: 'stt',
         },
         {
-            title: 'FullName',
-            dataIndex: 'fullName',
-            key: 'fullName',
+            title: 'Tên huyện',
+            dataIndex: 'district',
+            key: 'district',
+            render: (data) => (
+                <Select
+                    // defaultValue={{data.id}}
+                    showSearch
+                    style={{ width: '100%' }}
+                    placeholder="Tìm kiếm tên huyện"
+                    optionFilterProp="label"
+                    filterSort={(optionA, optionB) =>
+                        (optionA?.label ?? '').toLowerCase().localeCompare((optionB?.label ?? '').toLowerCase())
+                    }
+                    options={listDataDistrict}
+                />
+            ),
         },
         {
-            title: 'Username',
-            dataIndex: 'username',
-            key: 'username',
+            title: 'Tên File',
+            dataIndex: 'fileName',
+            key: 'fileName',
+            render: (data) => (
+                <div>
+                    File 1
+                </div>
+            ),
         },
         {
-            title: 'Status',
+            title: 'Trạng thái',
             key: 'isActive',
             dataIndex: 'isActive',
             render: (isActived, data) => (
@@ -89,49 +131,7 @@ function Quyhoach() {
             ),
         },
         {
-            title: 'Role',
-            dataIndex: 'isAdmin',
-            key: 'isAdmin',
-            render: (isActived, data) => (
-                <Dropdown
-                    menu={{
-                        items: [
-                            {
-                                //disabled: (userService.userValue.isAdmin && userService.userValue.isAdmin == 1) ? false : true,
-                                // label: (<Popconfirm disabled={(userService.userValue.isAdmin && userService.userValue.isAdmin == 1) ? false : true}
-                                //     title={<Text>Are you sure to change?</Text>}
-                                //     onConfirm={() => {
-                                //         if (!isActived || isActived == 0) data.isAdmin = true
-                                //         if (isActived == 1) data.isAdmin = false
-                                //         onUpdateByAdmin(data.id, data)
-                                //     }
-                                //     }
-                                //     okText="Yes"
-                                //     cancelText="No"
-                                // >
-                                //     {(isActived && isActived == 1)
-                                //         ? 'USER'
-                                //         : 'ADMIN'}
-                                // </Popconfirm>)
-                            }
-                        ]
-                    }}
-                    arrow
-                >
-                    {(isActived && isActived == 1) ? (
-                        <Tag color="blue">ADMIN</Tag>
-                    ) : (
-                        <Tag color="green">USER</Tag>
-                    )}
-                </Dropdown>
-            ),
-
-
-
-            // render: (isAdmin) => <>{isAdmin ? <p>Admin</p> : <p>User</p>}</>,
-        },
-        {
-            title: 'Action',
+            title: 'Hành động',
             key: 'Action',
             dataIndex: 'action',
             render: (text, record) =>
@@ -147,8 +147,10 @@ function Quyhoach() {
         },
     ];
     const [fileList1, setFileList1] = useState([]);
+    const [listDataDistrict, setListDataDistrict] = useState(dataMock);
     const handleChangeCSV = ({ fileList: newFileList1 }) => setFileList1(newFileList1);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [form] = Form.useForm(); // Tạo instance của form
 
     const showModal = () => {
         setIsModalOpen(true);
@@ -156,13 +158,36 @@ function Quyhoach() {
 
     const handleOk = () => {
         setIsModalOpen(false);
+        toast.success("Thêm mới thành công!")
+        setFileList1([]);
+        form.resetFields();
     };
 
     const handleCancel = () => {
         setIsModalOpen(false);
+        setFileList1([]);
+        form.resetFields();
     };
+    const [uploading, setUploading] = useState(false);
+    const beforeUpload = (file) => {
+        const isJson = file.type === 'application/json';
+        console.log('isJson', isJson);
+        if (!isJson) {
+            toast.error('Chỉ chấp nhận tệp JSON!');
+            setFileList1([]);
+            return;
+        } else {
+            setFileList1([...fileList1, file]);
+        }
+        return false;
+    }
 
-
+    const onRemove = (file) => {
+        const index = fileList1.indexOf(file);
+        const newFileList = fileList1.slice();
+        newFileList.splice(index, 1);
+        setFileList1(newFileList);
+    }
     return (
         <>
             <h1>Quy hoạch</h1>
@@ -172,107 +197,123 @@ function Quyhoach() {
                 type="primary">
                 Thêm GeoJson mới
             </Button>
-            <Modal title="Upload GeoJson" open={isModalOpen} onOk={handleOk} onCancel={handleCancel} width={1000}>
-
-            <Form
-            //initialValues={user}
-            //form={form}
-            scrollToFirstError
-            //</Modal>layout="vertical" onFinish={onFinish}
+            <Modal
+                title="Upload GeoJson"
+                open={isModalOpen}
+                onOk={handleOk}
+                onCancel={handleCancel}
+                width={800}
+                okText="Xác nhận"
+                cancelText="Đóng"
+                style={{
+                    marginTop: 160
+                }}
             >
-                
-            <Divider orientation="left" orientationMargin="0">
-                <Typography.Title level={4}>Thông tin</Typography.Title>
-            </Divider>
-                <Row gutter={10}>
-                <Col md={12} xs={24}>
-                        <Form.Item
-                            labelCol={{ span: 24 }}
-                            name='fullName'
-                            label="Tên chủ xe"
-                            rules={[
-                                {
-                                    required: true,
-                                    message: "Please input your Full Name!",
-                                },
-                            ]}
-                        >
-                            <Input prefix={<FileAddOutlined />} placeholder="FullName" />
-                        </Form.Item>
-                    </Col>
-                    <Col md={12} xs={24}> 
-                    <Form.Item name='csv'>
-                        
+
+                <Form
+                    //initialValues={user}
+                    form={form}
+                    scrollToFirstError
+                //</Modal>layout="vertical" onFinish={onFinish}
+                >
+
+                    <Divider orientation="left" orientationMargin="0">
+                        <Typography.Title level={4}>Thông tin</Typography.Title>
+                    </Divider>
+                    <Row gutter={10}>
+                        <Col md={16} xs={24}>
+                            <Form.Item
+                                labelCol={{ span: 24 }}
+                                name='district'
+                                label="Huyện"
+                                rules={[
+                                    {
+                                        required: true,
+                                        message: "Vui lòng chọn tên huyện!",
+                                    },
+                                ]}
+                            >
+                                <Select
+                                    showSearch
+                                    style={{ width: '100%' }}
+                                    placeholder="Tìm kiếm tên huyện"
+                                    optionFilterProp="label"
+                                    filterSort={(optionA, optionB) =>
+                                        (optionA?.label ?? '').toLowerCase().localeCompare((optionB?.label ?? '').toLowerCase())
+                                    }
+                                    options={listDataDistrict}
+                                />
+                            </Form.Item>
+                        </Col>
+                        <Col md={6} xs={24}>
+                            <Form.Item name='csv' className='item-upload'>
                                 <Upload
-                                    className="csv-mc-upload"
-                                    accept=".txt, .csv"
+                                    className="json-upload"
+                                    accept=".json"
                                     fileList={fileList1}
-                                    onChange={handleChangeCSV}
-                                    //action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
-                                    listType="picture"
+                                    beforeUpload={beforeUpload}
+                                    onRemove={onRemove}
+                                    // onChange={handleChangeCSV}
+                                    listType="text"
                                     maxCount={1}
                                 >
                                     {fileList1.length >= 1 ? null : (<Button style={{ width: '100%' }} icon={<UploadOutlined />}>Upload CSV GPS</Button>)}
-                                    {/* <Button icon={<UploadOutlined />}>Upload CSV</Button> */}
                                 </Upload>
                             </Form.Item>
-
-                    </Col>
-                
-                </Row> 
-
+                        </Col>
+                    </Row>
                 </Form>
             </Modal>
-                        <Divider orientation="left" orientationMargin="0">
-                            <Typography.Title level={4}>Quản lý file GeoJson</Typography.Title>
-                        </Divider>
-                        <Table
-                            dataSource={addSTTForList(users)}
-                            columns={columns}
-                            pagination={false}
-                            bordered
-                        ></Table>
-                    </>
-                    );
+            <Divider orientation="left" orientationMargin="0">
+                <Typography.Title level={4}>Quản lý file GeoJson</Typography.Title>
+            </Divider>
+            <Table
+                dataSource={addSTTForList(users)}
+                columns={columns}
+                pagination={false}
+                bordered
+            ></Table>
+        </>
+    );
 
-                    function TableBody() {
+    function TableBody() {
         if (users?.length) {
             return (users.map(user =>
-                    <tr key={user.id}>
-                        <td>{user.firstName}</td>
-                        <td>{user.lastName}</td>
-                        <td>{user.username}</td>
-                        <td style={{ whiteSpace: 'nowrap' }}>
-                            <Link href={`/users/edit/${user.id}`} className="btn btn-sm btn-primary me-1">Edit</Link>
-                            <button onClick={() => userService.delete(user.id)} className="btn btn-sm btn-danger btn-delete-user" style={{ width: '60px' }} disabled={user.isDeleting}>
-                                {user.isDeleting
-                                    ? <span className="spinner-border spinner-border-sm"></span>
-                                    : <span>Delete</span>
-                                }
-                            </button>
-                        </td>
-                    </tr>
-                    ));
+                <tr key={user.id}>
+                    <td>{user.firstName}</td>
+                    <td>{user.lastName}</td>
+                    <td>{user.username}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                        <Link href={`/users/edit/${user.id}`} className="btn btn-sm btn-primary me-1">Edit</Link>
+                        <button onClick={() => userService.delete(user.id)} className="btn btn-sm btn-danger btn-delete-user" style={{ width: '60px' }} disabled={user.isDeleting}>
+                            {user.isDeleting
+                                ? <span className="spinner-border spinner-border-sm"></span>
+                                : <span>Delete</span>
+                            }
+                        </button>
+                    </td>
+                </tr>
+            ));
         }
 
-                    if (!users) {
+        if (!users) {
             return (
-                    <tr>
-                        <td colSpan={4}>
-                            <Spinner />
-                        </td>
-                    </tr>
-                    );
+                <tr>
+                    <td colSpan={4}>
+                        <Spinner />
+                    </td>
+                </tr>
+            );
         }
 
-                    if (users?.length === 0) {
+        if (users?.length === 0) {
             return (
-                    <tr>
-                        <td colSpan={4} className="text-center">
-                            <div className="p-2">No Users To Display</div>
-                        </td>
-                    </tr>
-                    );
+                <tr>
+                    <td colSpan={4} className="text-center">
+                        <div className="p-2">No Users To Display</div>
+                    </td>
+                </tr>
+            );
         }
     }
 }
