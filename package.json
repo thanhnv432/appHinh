@@ -33,6 +33,7 @@
         "react-leaflet": "^4.2.1",
         "react-spring-bottom-sheet": "^3.4.1",
         "react-sticky-box": "^2.0.5",
+        "react-toastify": "^10.0.5",
         "typescript": "5.1.6",
         "zustand": "^4.3.9"
     }
