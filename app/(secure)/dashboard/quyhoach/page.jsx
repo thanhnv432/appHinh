@@ -10,7 +10,8 @@ import { Dropdown, Popconfirm, Table, Select, Tag, Typography, Button, Flex, Div
 import {
     DeleteFilled,
     FileAddOutlined,
-    UploadOutlined
+    UploadOutlined,
+    EditOutlined
 } from '@ant-design/icons';
 import { toast } from 'react-toastify';
 
@@ -69,7 +70,7 @@ function Quyhoach() {
             key: 'district',
             render: (data) => (
                 <Select
-                    // defaultValue={{data.id}}
+                    defaultValue={'1'}
                     showSearch
                     style={{ width: '100%' }}
                     placeholder="Tìm kiếm tên huyện"
@@ -140,7 +141,14 @@ function Quyhoach() {
                         deleteUser(record.id)
                     }
                     }
-                        title="Are you sure delete this user?" okText="Yes" cancelText="No">
+                        title="Bạn có chắc chắn thay đổi bản ghi này?" okText="Có" cancelText="Không">
+                        <Button type="primary" ghost ><EditOutlined />Edit</Button>
+                    </Popconfirm>
+                    <Popconfirm onConfirm={() => {
+                        deleteUser(record.id)
+                    }
+                    }
+                        title="Bạn có chắc chắn xóa bản ghi này?" okText="Có" cancelText="Không">
                         <Button danger disabled={record.isDeleting} ><DeleteFilled />Delete</Button>
                     </Popconfirm>
                 </Flex>
