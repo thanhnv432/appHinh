@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { Spinner } from '_components';
 import { useUserService } from '_services';
 
-import { Dropdown, Popconfirm, Table, Select, Tag, Typography, Button, Flex, Divider, Modal, Form, Upload, Col, Row } from 'antd';
+import { Dropdown, Popconfirm, Table, Select, Tag, Typography, Button, Flex, Divider, Modal, Form, Upload, Col, Row, Input } from 'antd';
 import {
     DeleteFilled,
     FileAddOutlined,
@@ -14,11 +14,12 @@ import {
     EditOutlined
 } from '@ant-design/icons';
 import { toast } from 'react-toastify';
+const { TextArea } = Input;
 
-import '../quyhoach/quyhoach.css';
-export default Quyhoach;
+import '../blog/blog.css';
+export default Blog;
 
-function Quyhoach() {
+function Blog() {
     const userService = useUserService();
     const users = userService.users;
 
@@ -34,6 +35,49 @@ function Quyhoach() {
             ...ele,
         }));
     }
+
+    const dataListBlog = [
+        {
+            key: 0,
+            stt: 1,
+            title: "Tiêu đề 1",
+            content: "Đây là tiêu đề 1",
+            latPosition: 10,
+            lonPosition: 20,
+            district: '1',
+            isActive: true
+        },
+        {
+            key: 1,
+            stt: 2,
+            title: "Tiêu đề 2",
+            content: "Đây là tiêu đề 2",
+            latPosition: 10,
+            lonPosition: 20,
+            district: '2',
+            isActive: false
+        },
+        {
+            key: 2,
+            stt: 3,
+            title: "Tiêu đề 3",
+            content: "Đây là tiêu đề 3",
+            latPosition: 100,
+            lonPosition: 280,
+            district: '3',
+            isActive: true
+        },
+        {
+            key: 3,
+            stt: 4,
+            title: "Tiêu đề 4",
+            content: "Đây là tiêu đề 4",
+            latPosition: 1220,
+            lonPosition: 2310,
+            district: '4',
+            isActive: false
+        }
+    ]
 
     const dataMock = [
         {
@@ -63,6 +107,31 @@ function Quyhoach() {
             title: 'STT',
             dataIndex: 'stt',
             key: 'stt',
+            width: 100,
+        },
+        {
+            title: 'Tiêu đề',
+            dataIndex: 'title',
+            key: 'title',
+            width: 100,
+        },
+        {
+            title: 'Nội dung',
+            dataIndex: 'content',
+            key: 'content',
+            width: 400,
+        },
+        {
+            title: 'Toạ độ lat',
+            dataIndex: 'latPosition',
+            key: 'latPosition',
+            width: 150,
+        },
+        {
+            title: 'Toạ độ lon',
+            dataIndex: 'lonPosition',
+            key: 'lonPosition',
+            width: 150,
         },
         {
             title: 'Tên huyện',
@@ -79,18 +148,10 @@ function Quyhoach() {
                         (optionA?.label ?? '').toLowerCase().localeCompare((optionB?.label ?? '').toLowerCase())
                     }
                     options={listDataDistrict}
+                    disabled
                 />
             ),
-        },
-        {
-            title: 'Tên File',
-            dataIndex: 'fileName',
-            key: 'fileName',
-            render: (data) => (
-                <div>
-                    File 1
-                </div>
-            ),
+            width: 200,
         },
         {
             title: 'Trạng thái',
@@ -130,22 +191,18 @@ function Quyhoach() {
                     )}
                 </Dropdown>
             ),
+            width: 100,
         },
         {
             title: 'Hành động',
             key: 'Action',
             dataIndex: 'action',
+            width: 300,
             render: (text, record) =>
                 <Flex wrap gap="small">
+                    <Button type="primary" ghost onClick={() => editBlog(record)} ><EditOutlined />Edit</Button>
                     <Popconfirm onConfirm={() => {
                         // deleteUser(record.id)
-                    }
-                    }
-                        title="Bạn có chắc chắn thay đổi bản ghi này?" okText="Có" cancelText="Không">
-                        <Button type="primary" ghost ><EditOutlined />Edit</Button>
-                    </Popconfirm>
-                    <Popconfirm onConfirm={() => {
-                        deleteUser(record.id)
                     }
                     }
                         title="Bạn có chắc chắn xóa bản ghi này?" okText="Có" cancelText="Không">
@@ -165,10 +222,20 @@ function Quyhoach() {
     };
 
     const handleOk = () => {
-        setIsModalOpen(false);
-        toast.success("Thêm mới thành công!")
-        setFileList1([]);
-        form.resetFields();
+        form
+            .validateFields()
+            .then(values => {
+                console.log('Form Values:', values);
+                setIsModalOpen(false);
+                toast.success("Thêm mới thành công!")
+                setFileList1([]);
+                form.resetFields()
+            })
+            .catch(errorInfo => {
+                // Handle validation errors if needed
+                console.log('Validation Failed:', errorInfo);
+            });
+        ;
     };
 
     const handleCancel = () => {
@@ -178,15 +245,20 @@ function Quyhoach() {
     };
     const [uploading, setUploading] = useState(false);
     const beforeUpload = (file) => {
-        const isJson = file.type === 'application/json';
-        console.log('isJson', isJson);
-        if (!isJson) {
-            toast.error('Chỉ chấp nhận tệp JSON!');
-            setFileList1([]);
-            return;
-        } else {
-            setFileList1([...fileList1, file]);
+        const isImage = file.type.startsWith('image/');
+        if (!isImage) {
+            toast.error('Chỉ chấp nhận tệp hình ảnh!');
+            return false; // Prevent non-image files from being added
         }
+
+        // Check if the file is already in the list
+        const isFileAlreadyAdded = fileList1.some(existingFile => existingFile.name === file.name);
+
+        if (isFileAlreadyAdded) {
+            toast.error('File này đã được thêm!');
+            return false; // Prevent duplicate files from being added
+        }
+        setFileList1(prevFileList => [...prevFileList, file]);
         return false;
     }
 
@@ -196,26 +268,29 @@ function Quyhoach() {
         newFileList.splice(index, 1);
         setFileList1(newFileList);
     }
+
+    const editBlog = (item) => {
+        showModal();
+        console.log(item);
+        form.setFieldsValue(item)
+    }
     return (
         <>
-            <h1>Quy hoạch</h1>
+            <h1>Bài viết</h1>
             <Button
                 icon={<FileAddOutlined />}
                 onClick={showModal}
                 type="primary">
-                Thêm GeoJson mới
+                Thêm bài viết mới
             </Button>
             <Modal
-                title="Upload GeoJson"
+                title="Thêm bài viết mới"
                 open={isModalOpen}
                 onOk={handleOk}
                 onCancel={handleCancel}
                 width={800}
                 okText="Xác nhận"
                 cancelText="Đóng"
-                style={{
-                    marginTop: 160
-                }}
             >
 
                 <Form
@@ -229,7 +304,26 @@ function Quyhoach() {
                         <Typography.Title level={4}>Thông tin</Typography.Title>
                     </Divider>
                     <Row gutter={10}>
-                        <Col md={16} xs={24}>
+                        <Col md={12} xs={24}>
+                            <Form.Item
+                                labelCol={{ span: 24 }}
+                                name='title'
+                                label="Tiêu đề"
+                                rules={[
+                                    {
+                                        required: true,
+                                        message: "Tiêu đề là bắt buộc",
+                                    },
+                                ]}
+                            >
+                                <Input
+                                    showSearch
+                                    style={{ width: '100%' }}
+                                    placeholder="NhậP tiêu đề"
+                                />
+                            </Form.Item>
+                        </Col>
+                        <Col md={12} xs={24}>
                             <Form.Item
                                 labelCol={{ span: 24 }}
                                 name='district'
@@ -253,19 +347,73 @@ function Quyhoach() {
                                 />
                             </Form.Item>
                         </Col>
-                        <Col md={6} xs={24}>
-                            <Form.Item name='csv' className='item-upload'>
+                        <Col md={12} xs={24}>
+                            <Form.Item
+                                labelCol={{ span: 24 }}
+                                name='latPosition'
+                                label="Toạ độ lat"
+                                rules={[
+                                    {
+                                        required: true,
+                                        message: "Toạ độ lat là bắt buộc",
+                                    },
+                                ]}
+                            >
+                                <Input
+                                    showSearch
+                                    style={{ width: '100%' }}
+                                    placeholder="NhậP toạ độ lat"
+                                />
+                            </Form.Item>
+                        </Col>
+                        <Col md={12} xs={24}>
+                            <Form.Item
+                                labelCol={{ span: 24 }}
+                                name='lonPosition'
+                                label="Toạ độ lon"
+                                rules={[
+                                    {
+                                        required: true,
+                                        message: "Toạ độ lon là bắt buộc",
+                                    },
+                                ]}
+                            >
+                                <Input
+                                    showSearch
+                                    style={{ width: '100%' }}
+                                    placeholder="NhậP toạ độ lon"
+                                />
+                            </Form.Item>
+                        </Col>
+                        <Col md={24} xs={24}>
+                            <Form.Item
+                                labelCol={{ span: 24 }}
+                                name='content'
+                                label="Nội dung"
+                            >
+                                <TextArea
+                                    // value={value}
+                                    // onChange={(e) => setValue(e.target.value)}
+                                    placeholder="NhậP nội dung"
+                                    autoSize={{ minRows: 3, maxRows: 5 }}
+                                />
+                            </Form.Item>
+                        </Col>
+                        <Col md={24} xs={24}>
+                            <Form.Item name='imageUpload' className='item-upload'>
                                 <Upload
-                                    className="json-upload"
-                                    accept=".json"
+                                    className="image-upload"
+                                    accept="image/*"
                                     fileList={fileList1}
                                     beforeUpload={beforeUpload}
                                     onRemove={onRemove}
                                     // onChange={handleChangeCSV}
-                                    listType="text"
-                                    maxCount={1}
+                                    listType="picture"
+                                    multiple
                                 >
-                                    {fileList1.length >= 1 ? null : (<Button style={{ width: '100%' }} icon={<UploadOutlined />}>Upload CSV GPS</Button>)}
+                                    {/* {fileList1.length >= 1 ? null : (<Button style={{ width: '100%' }} icon={<UploadOutlined />}>Tải lên hình ảnh</Button>)} */}
+                                    <Button style={{ width: '100%' }} icon={<UploadOutlined />}>Tải lên hình ảnh</Button>
+
                                 </Upload>
                             </Form.Item>
                         </Col>
@@ -273,55 +421,14 @@ function Quyhoach() {
                 </Form>
             </Modal>
             <Divider orientation="left" orientationMargin="0">
-                <Typography.Title level={4}>Quản lý file GeoJson</Typography.Title>
+                <Typography.Title level={4}>Quản lý bài viết</Typography.Title>
             </Divider>
             <Table
-                dataSource={addSTTForList(users)}
+                dataSource={dataListBlog}
                 columns={columns}
                 pagination={false}
                 bordered
             ></Table>
         </>
     );
-
-    function TableBody() {
-        if (users?.length) {
-            return (users.map(user =>
-                <tr key={user.id}>
-                    <td>{user.firstName}</td>
-                    <td>{user.lastName}</td>
-                    <td>{user.username}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                        <Link href={`/users/edit/${user.id}`} className="btn btn-sm btn-primary me-1">Edit</Link>
-                        <button onClick={() => userService.delete(user.id)} className="btn btn-sm btn-danger btn-delete-user" style={{ width: '60px' }} disabled={user.isDeleting}>
-                            {user.isDeleting
-                                ? <span className="spinner-border spinner-border-sm"></span>
-                                : <span>Delete</span>
-                            }
-                        </button>
-                    </td>
-                </tr>
-            ));
-        }
-
-        if (!users) {
-            return (
-                <tr>
-                    <td colSpan={4}>
-                        <Spinner />
-                    </td>
-                </tr>
-            );
-        }
-
-        if (users?.length === 0) {
-            return (
-                <tr>
-                    <td colSpan={4} className="text-center">
-                        <div className="p-2">No Users To Display</div>
-                    </td>
-                </tr>
-            );
-        }
-    }
 }
